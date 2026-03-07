@@ -1,0 +1,110 @@
+name: Build Releases
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: WavFinder-windows
+            ext: .exe
+          - os: macos-latest
+            artifact: WavFinder-macos
+            ext: ""
+          - os: ubuntu-latest
+            artifact: WavFinder-linux
+            ext: ""
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Linux needs tkinter installed via apt
+      - name: Install tkinter (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+
+      - name: Install dependencies
+        run: pip install ".[dev]"
+
+      - name: Build with PyInstaller
+        run: pyinstaller wavfinder.spec
+
+      # --- Package per platform ---
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir staging
+          copy dist\WavFinder.exe staging\
+        shell: cmd
+
+      - name: Package (macOS .dmg)
+        if: runner.os == 'macOS'
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "WavFinder" \
+            --window-size 400 300 \
+            --no-internet-enable \
+            "WavFinder.dmg" \
+            "dist/WavFinder.app"
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir staging
+          cp dist/WavFinder staging/
+          tar -czf WavFinder-linux.tar.gz -C staging WavFinder
+
+      # --- Upload artifacts ---
+      - name: Upload Windows artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: staging/WavFinder.exe
+
+      - name: Upload macOS artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: WavFinder.dmg
+
+      - name: Upload Linux artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: WavFinder-linux.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/WavFinder-windows/WavFinder.exe
+            artifacts/WavFinder-macos/WavFinder.dmg
+            artifacts/WavFinder-linux/WavFinder-linux.tar.gz
+          generate_release_notes: true

@@ -24,3 +24,8 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Sample audio dropped in for testing. Test fixtures are synthesised in
+# tests/conftest.py, so no real .wav ever needs to be committed.
+*.wav
+*.WAV

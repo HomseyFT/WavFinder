@@ -13,10 +13,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pyinstaller>=6.0"]
+dev = ["pyinstaller>=6.0", "pytest>=8.0"]
 
 [project.scripts]
 wavfinder = "wavfinder.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "src"]

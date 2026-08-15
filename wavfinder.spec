@@ -45,4 +45,16 @@ if sys.platform == "darwin":
         exe,
         name="WavFinder.app",
         bundle_identifier="dev.wavfinder.app",
+        info_plist={
+            # Without this the window renders at 1x and looks blurry on any
+            # Retina display.
+            "NSHighResolutionCapable": True,
+            "CFBundleShortVersionString": "0.2.0",
+            # Reading a sound library that lives in Documents/Desktop/an
+            # external volume triggers a macOS consent prompt; this is the text
+            # shown in it.
+            "NSDesktopFolderUsageDescription": "WavFinder scans your sound libraries for .wav files.",
+            "NSDocumentsFolderUsageDescription": "WavFinder scans your sound libraries for .wav files.",
+            "NSRemovableVolumesUsageDescription": "WavFinder scans sound libraries on external drives.",
+        },
     )
